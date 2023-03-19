@@ -101,36 +101,45 @@ def main():
                 "/var/log/openvpn-supervisor/log")
 
     while notdone:
+        
+        time.sleep(120)
 
+        # Ping firewall
+        status = sendtoshell("ping -c 1 -w2 10.10.10.1")
+
+        if status[2] == 0:
+            # We have connectivity to firewall, skip the rest
+            continue
+        
         # Ping out
         status = sendtoshell("ping -c 1 -w2 www.google.com")
 
-        # If can't ping, issue restart.
-        if status[2] > 0:
+        if status[2] == 0:
+            # No internet, no point restarting yet
+            continue
 
-            logger.info("Stale VPN connection detected - restarting OpenVPN "
-                        "service.")
+        logger.info("Stale VPN connection detected - restarting OpenVPN "
+                    "service.")
 
-            status = openvpnservicerestart()
+        status = openvpnservicerestart()
 
-            if status[2] == 0:
+        if status[2] == 0:
 
-                logger.info("OpenVPN has been successfully restarted.")
+            logger.info("OpenVPN has been successfully restarted.")
 
-            else:
+        else:
 
-                notdone = False
+            notdone = False
 
-                logger.info("ERROR - OpenVPN could not be restarted, here is "
-                            "the output of stdout, stderr and the errorcode:"
-                            "\n\nstdout:\n{0}\n\nstderr:{1}\n\nerrcode = {2}"
-                            .format(status[0], status[1], status[2]))
+            logger.info("ERROR - OpenVPN could not be restarted, here is "
+                        "the output of stdout, stderr and the errorcode:"
+                        "\n\nstdout:\n{0}\n\nstderr:{1}\n\nerrcode = {2}"
+                        .format(status[0], status[1], status[2]))
 
-                logger.info("If the error message is to do with 'permissions' "
-                            "or 'access denied' then you need to make sure "
-                            "that this utility is running as root.")
+            logger.info("If the error message is to do with 'permissions' "
+                        "or 'access denied' then you need to make sure "
+                        "that this utility is running as root.")
 
-        time.sleep(120)
 
     logger.info("Exiting the OpenVPN Supervisor.")
     logger.info("Goodbye for now!")
